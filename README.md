@@ -12,3 +12,4 @@ First steps:
 8. Cut and solder the wires for the motor encoders.
 9. Cut and solder the wires for the QT Py ESP32-S3.
 10. With the microcontrollers plugged in, drag and drop the files in MAKER-PI and ESP32-S3 to the respective microcontroller.
+11. Download Bluefruit Connect on your phone from the app store.
