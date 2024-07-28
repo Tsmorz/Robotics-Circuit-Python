@@ -3,50 +3,38 @@
 #  July 26 2024
 
 import neopixel
-import simpleio
-import asyncio
 import time
-import board
-import busio
 
 from sensors import (
     ImuSensor,
-    Battery,
-    Wheel,
-    calibrate_motor,
-    compute_motor_commands,
     robot_tipped_over,
-    initialize_motors,
-    initialize_buttons,
-    TofSensor,
+    calibrate_sensors,
 )
+from sounds import play_start_up_tune
+
 from math_utils import map_ranges, angle_from_acceleration, sign
 from helper_functions import print_number_list
-from definitions import *
+from definitions import (
+    NEOPIXEL_PIN,
+)
 
-import supervisor
+from uart_utils import read_from_serial, write_to_serial, initialize_uart
 
-supervisor.runtime.autoreload = False
+from button_utils import initialize_buttons
+from motor_utils import initialize_motors, calibrate_motor, compute_motor_commands
 
-uart = busio.UART(TX0, RX0, baudrate=BAUD_RATE, timeout=0)
 
-# tof = TofSensor()
+uart = initialize_uart()
+
 imu = ImuSensor()
-# battery = Battery()
 motor1, motor2 = initialize_motors()
 btn1, btn2 = initialize_buttons()
-wheel = Wheel()
 
 # Initialize Neopixel RGB LEDs
 pixels = neopixel.NeoPixel(NEOPIXEL_PIN, 2)
 pixels.fill(0)
 
-
-# -------------------------------------------------
-# ON START: Show running light and play melody
-# -------------------------------------------------
-for i in range(len(MELODY_NOTE)):
-    simpleio.tone(PIEZO_PIN, MELODY_NOTE[i], duration=MELODY_DURATION[i])
+play_start_up_tune()
 
 
 def main():
@@ -57,11 +45,9 @@ def main():
 
         start_time = time.monotonic()
 
-        for i in range(10):
-            measurements = imu.read()
-            print_number_list(measurements)
+        calibrate_sensors()
 
-        t, acc_y, _, _, _, _, _, _, _, _ = measurements
+        t, acc_y, _, _, _, _, _, _, _, _ = imu.read()
         theta = angle_from_acceleration(acc_y)
 
         now = time.monotonic() - start_time
@@ -82,21 +68,26 @@ def main():
 
             theta += omega * dt
 
-            u = compute_motor_commands(omega, theta, sum_torque)
-            sgn = sign(u)
+            message = read_from_serial(uart)
+            if message is not None:
+                u1, u2 = message
+                u1 = float(u1)
+                u2 = float(u2)
 
-            u1 = map_ranges(u, input_range=(0, sgn), output_range=(sgn * 0.38, sgn))
-            u2 = map_ranges(u, input_range=(0, sgn), output_range=(sgn * 0.30, sgn))
+            else:
+                u = compute_motor_commands(omega, theta, sum_torque)
+                sgn = sign(u)
 
-            u1, u2 = 0.0, 0.0
+                u1 = map_ranges(u, input_range=(0, sgn), output_range=(sgn * 0.38, sgn))
+                u2 = map_ranges(u, input_range=(0, sgn), output_range=(sgn * 0.30, sgn))
+
+                u1, u2 = 0.0, 0.0
             motor1.throttle = u2
             motor2.throttle = u1
 
             measurements[0] = t
             string = print_number_list(measurements + [u1, u2], decimal=2)
-            uart.write(bytes(f"<B,{string}>", "ascii"))
-
-            # tof.read()
+            write_to_serial(uart, message=string)
 
             if robot_tipped_over(acc_y):
                 motor1.throttle = None

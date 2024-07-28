@@ -1,12 +1,7 @@
-import board
 import busio
 import time
 from analogio import AnalogIn
 import digitalio
-import asyncio
-
-import pwmio
-from adafruit_motor import servo, motor
 
 from ulab import numpy as np
 
@@ -156,43 +151,15 @@ class Wheel:
         return distance
 
 
-def calibrate_motor(motor):
-    i = -1
-    motor.throttle = i
-    motor.throttle = i
-    while i < 0:
-        i += 0.01
-        motor.throttle = i
-        motor.throttle = i
-        time.sleep(0.1)
-        print(motor.throttle)
-
-    while i > -0.99:
-        i -= 0.01
-        motor.throttle = i
-        motor.throttle = i
-        time.sleep(0.1)
-        print(motor.throttle)
-
-    motor.throttle = None
-    motor.throttle = None
-    return None
-
-
-def compute_motor_commands(omega, theta, sum_torque, pid=(6.0, 0.9, 0.3)):
-    torque = np.sin(theta)
-
-    sum_torque += torque
-    sum_torque = np.clip(sum_torque, -1.5, 1.5)
-
-    proportional, integral, derivative = pid
-    u = proportional * torque + integral * sum_torque + derivative * omega
-    return np.clip(u, -1, 1)
-
-
 def robot_tipped_over(acc_y):
     value = abs(acc_y) > 10
     return value
+
+
+def calibrate_sensors(imu):
+    for i in range(10):
+        measurements = imu.read()
+        print(measurements)
 
 
 def main():
@@ -205,33 +172,6 @@ def main():
         measurements = battery.get_voltage()
         print(measurements)
         time.sleep(0.01)
-
-
-def initialize_motors():
-    # Initialize DC motors
-    m1a = pwmio.PWMOut(board.GP8, frequency=10000)
-    m1b = pwmio.PWMOut(board.GP9, frequency=10000)
-    motor1 = motor.DCMotor(m1a, m1b)
-
-    m2a = pwmio.PWMOut(board.GP10, frequency=10000)
-    m2b = pwmio.PWMOut(board.GP11, frequency=10000)
-    motor2 = motor.DCMotor(m2a, m2b)
-
-    motor1.decay_mode = motor.FAST_DECAY
-    motor2.decay_mode = motor.FAST_DECAY
-    return motor1, motor2
-
-
-def initialize_buttons():
-    # Initialize buttons
-    btn1 = digitalio.DigitalInOut(board.GP20)
-    btn2 = digitalio.DigitalInOut(board.GP21)
-    btn1.direction = digitalio.Direction.INPUT
-    btn2.direction = digitalio.Direction.INPUT
-    btn1.pull = digitalio.Pull.UP
-    btn2.pull = digitalio.Pull.UP
-
-    return btn1, btn2
 
 
 if __name__ == "__main__":
