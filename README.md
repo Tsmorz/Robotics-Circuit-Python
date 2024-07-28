@@ -10,3 +10,6 @@ First steps:
 5. Download the Circuit Python Bundle for Version 9.X. Here's the [link](https://circuitpython.org/libraries).
 6. Assemble all of the electronics and 3D printed parts. You might find [standoffs](https://www.amazon.com/dp/B06Y5TJXY1?psc=1&ref=ppx_yo2ov_dt_b_product_details) and [heatset insterts](https://www.amazon.com/dp/B0B47MZ1SG?psc=1&ref=ppx_yo2ov_dt_b_product_details) useful.
 8. Cut and solder the wires for the motor encoders.
+9. Cut and solder the wires for the QT Py ESP32-S3.
+10. With the microcontrollers plugged in, drag and drop the files in MAKER-PI and ESP32-S3 to the respective microcontroller.
+11. Download Bluefruit Connect on your phone from the app store.
